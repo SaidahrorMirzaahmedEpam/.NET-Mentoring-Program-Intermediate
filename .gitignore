@@ -1,0 +1,106 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+
+# Visual Studio Code
+*.code-workspace
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.csproj.user
+
+# Rider
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# NuGet Package Manager
+project.assets.json
+project.lock.json
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Test Results
+TestResults/
+*.trx
+*.coverage
+
+# ReSharper
+_ReSharper*/
+*.DotSettings.user
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local appsettings (if needed)
+appsettings.local.json
+
+# Environment files
+.env
+.env.local
+
+# Node modules (if any frontend code)
+node_modules/
+npm-debug.log
+
+# Package manager
+packages/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts not in standard folders
+artifacts/
+publish/
+
+# Coverage reports
+coverage/
+*.coverage
