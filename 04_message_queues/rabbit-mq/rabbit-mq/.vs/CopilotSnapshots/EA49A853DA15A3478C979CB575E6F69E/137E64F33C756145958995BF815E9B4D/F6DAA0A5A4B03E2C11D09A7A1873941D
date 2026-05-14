@@ -1,0 +1,143 @@
+﻿using System.Text;
+using System.Text.Json;
+using DocumentProcessing.Contracts;
+using RabbitMQ.Client;
+
+const string QueueName = "document_chunks_queue";
+const int ChunkSize = 1024 * 1024; // 1 MB
+
+var inputFolder = Path.Combine(AppContext.BaseDirectory, "Input");
+var processedFolder = Path.Combine(AppContext.BaseDirectory, "Processed");
+
+Directory.CreateDirectory(inputFolder);
+Directory.CreateDirectory(processedFolder);
+
+Console.WriteLine("DataCaptureService started.");
+Console.WriteLine($"Watching folder: {inputFolder}");
+Console.WriteLine("Copy a PDF file into the Input folder to send it.");
+
+var rabbitMqFactory = new ConnectionFactory
+{
+    HostName = "localhost",
+    UserName = "guest",
+    Password = "guest"
+};
+
+await using var connection = await rabbitMqFactory.CreateConnectionAsync();
+await using var channel = await connection.CreateChannelAsync();
+
+await channel.QueueDeclareAsync(
+    queue: QueueName,
+    durable: true,
+    exclusive: false,
+    autoDelete: false);
+
+var watcher = new FileSystemWatcher(inputFolder)
+{
+    Filter = "*.pdf",
+    EnableRaisingEvents = true
+};
+
+watcher.Created += (_, eventArgs) =>
+{
+    // Fire-and-forget keeps the file watcher responsive.
+    _ = Task.Run(() => ProcessPdfFileAsync(eventArgs.FullPath, channel));
+};
+
+Console.WriteLine("Press Enter to stop the service.");
+Console.ReadLine();
+
+static async Task ProcessPdfFileAsync(string filePath, IChannel channel)
+{
+    try
+    {
+        if (!filePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var fileInfo = await WaitUntilFileIsReadyAsync(filePath);
+        if (fileInfo is null)
+        {
+            Console.WriteLine($"Could not read file: {Path.GetFileName(filePath)}");
+            return;
+        }
+
+        var fileId = Guid.NewGuid().ToString();
+        var fileName = fileInfo.Name;
+        var totalChunks = (int)Math.Ceiling(fileInfo.Length / (double)ChunkSize);
+
+        Console.WriteLine($"Sending {fileName} as {totalChunks} chunk(s).");
+
+        var buffer = new byte[ChunkSize];
+
+        // Limit the lifetime of the FileStream so it is disposed before we try to move the file.
+        await using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            for (var chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++)
+            {
+                var bytesRead = await fileStream.ReadAsync(buffer);
+                var chunkData = buffer[..bytesRead].ToArray();
+
+                var message = new FileChunkMessage
+                {
+                    FileId = fileId,
+                    FileName = fileName,
+                    ChunkIndex = chunkIndex,
+                    TotalChunks = totalChunks,
+                    Data = chunkData
+                };
+
+                var json = JsonSerializer.Serialize(message);
+                var body = Encoding.UTF8.GetBytes(json);
+
+                await channel.BasicPublishAsync(
+                    exchange: string.Empty,
+                    routingKey: QueueName,
+                    mandatory: false,
+                    body: body);
+
+                Console.WriteLine($"Sent chunk {chunkIndex + 1}/{totalChunks} for {fileName}.");
+            }
+        }
+
+        var processedPath = Path.Combine(
+            Path.GetDirectoryName(filePath)!,
+            "..",
+            "Processed",
+            fileName);
+
+        processedPath = Path.GetFullPath(processedPath);
+
+        if (File.Exists(processedPath))
+        {
+            File.Delete(processedPath);
+        }
+
+        File.Move(filePath, processedPath);
+        Console.WriteLine($"Moved {fileName} to Processed.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error processing {Path.GetFileName(filePath)}: {ex.Message}");
+    }
+}
+
+static async Task<FileInfo?> WaitUntilFileIsReadyAsync(string filePath)
+{
+    for (var attempt = 1; attempt <= 10; attempt++)
+    {
+        try
+        {
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
+            return new FileInfo(filePath);
+        }
+        catch (IOException)
+        {
+            Console.WriteLine($"Waiting for file to finish copying... attempt {attempt}");
+            await Task.Delay(500);
+        }
+    }
+
+    return null;
+}

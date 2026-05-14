@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "KOAXXQTbuSk=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\SayidahrorMirzaaxmed\\Downloads\\rabbit-mq\\rabbit-mq\\MainProcessingService\\MainProcessingService.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\SayidahrorMirzaaxmed\\.nuget\\packages\\rabbitmq.client\\7.2.1\\rabbitmq.client.7.2.1.nupkg.sha512",
+    "C:\\Users\\SayidahrorMirzaaxmed\\.nuget\\packages\\system.io.pipelines\\8.0.0\\system.io.pipelines.8.0.0.nupkg.sha512",
+    "C:\\Users\\SayidahrorMirzaaxmed\\.nuget\\packages\\system.threading.ratelimiting\\8.0.0\\system.threading.ratelimiting.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

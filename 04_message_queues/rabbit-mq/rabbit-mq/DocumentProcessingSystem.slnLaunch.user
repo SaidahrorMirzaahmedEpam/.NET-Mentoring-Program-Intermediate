@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "DataCaptureService\\DataCaptureService.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "MainProcessingService\\MainProcessingService.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
