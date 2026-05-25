@@ -104,3 +104,6 @@ publish/
 # Coverage reports
 coverage/
 *.coverage
+
+# Large dump files
+*.dmp
