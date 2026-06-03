@@ -13,21 +13,26 @@ namespace ProfileSample.Controllers
     {
         public ActionResult Index()
         {
-            using (var context = new ProfileSampleEntities())
-            {
-                var model = context.ImgSources
-                    .AsNoTracking()
-                    .OrderBy(x => x.Id)
-                    .Take(20)
-                    .Select(x => new ImageModel
-                    {
-                        Name = x.Name,
-                        Data = x.Data
-                    })
-                    .ToList();
+            var context = new ProfileSampleEntities();
 
-                return View(model);
-            }
+            var sources = context.ImgSources.Take(20).Select(x => x.Id);
+            
+            var model = new List<ImageModel>();
+
+            foreach (var id in sources)
+            {
+                var item = context.ImgSources.Find(id);
+
+                var obj = new ImageModel()
+                {
+                    Name = item.Name,
+                    Data = item.Data
+                };
+
+                model.Add(obj);
+            } 
+
+            return View(model);
         }
 
         public ActionResult Convert()
