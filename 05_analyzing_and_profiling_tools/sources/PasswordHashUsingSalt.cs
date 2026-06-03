@@ -2,7 +2,7 @@ public class PasswordHashUsingSalt
 {
     public string GeneratePasswordHashUsingSalt(string passwordText, byte[] salt)
     {
-        const int iterate = 600_000;
+        const int iterate = 10000;
         const int derivedBytesLength = 32;
 
         using var pbkdf2 = new Rfc2898DeriveBytes(
