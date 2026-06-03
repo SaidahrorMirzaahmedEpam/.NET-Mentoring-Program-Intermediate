@@ -48,11 +48,8 @@ namespace GameOfLife
         {
             for (int i = 0; i < 2; i++)
             {
-                if (adWindow[i] != null)
-                {
-                    adWindow[i].Closed -= AdWindowOnClosed;
-                    adWindow[i] = null;
-                }
+                adWindow[i].Closed -= AdWindowOnClosed;
+                adWindow[i] = null;
             }
             
             
@@ -71,18 +68,6 @@ namespace GameOfLife
             {
                 timer.Stop();
                 ButtonStart.Content = "Start";
-                // Stop and close ad windows to release resources
-                if (adWindow != null)
-                {
-                    for (int i = 0; i < adWindow.Length; i++)
-                    {
-                        if (adWindow[i] != null)
-                        {
-                            adWindow[i].Close();
-                            adWindow[i] = null;
-                        }
-                    }
-                }
             }
         }
 
@@ -98,30 +83,6 @@ namespace GameOfLife
             mainGrid.Clear();
         }
 
-        protected override void OnClosed(EventArgs e)
-        {
-            // ensure timer stopped
-            if (timer != null)
-            {
-                timer.Stop();
-                timer.Tick -= OnTimer;
-            }
-
-            // close ad windows if still open
-            if (adWindow != null)
-            {
-                for (int i = 0; i < adWindow.Length; i++)
-                {
-                    if (adWindow[i] != null)
-                    {
-                        adWindow[i].Close();
-                        adWindow[i] = null;
-                    }
-                }
-            }
-
-            base.OnClosed(e);
-        }
         
     }
 }

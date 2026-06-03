@@ -48,10 +48,8 @@ namespace GameOfLife
             for (int i = 0; i < SizeX; i++)
                 for (int j = 0; j < SizeY; j++)
                 {
-                    cells[i, j].IsAlive = false;
-                    cells[i, j].Age = 0;
-                    nextGenerationCells[i, j].IsAlive = false;
-                    nextGenerationCells[i, j].Age = 0;
+                    cells[i, j] = new Cell(i, j, 0, false);
+                    nextGenerationCells[i, j] = new Cell(i, j, 0, false);
                     cellsVisuals[i, j].Fill = Brushes.Gray;
                 }
         }
@@ -120,28 +118,14 @@ namespace GameOfLife
         
         public void UpdateToNextGeneration()
         {
-            // Only update cells and visuals that actually changed to reduce UI work
             for (int i = 0; i < SizeX; i++)
                 for (int j = 0; j < SizeY; j++)
                 {
-                    bool newAlive = nextGenerationCells[i, j].IsAlive;
-                    int newAge = nextGenerationCells[i, j].Age;
-
-                    Cell current = cells[i, j];
-
-                    if (current.IsAlive != newAlive || current.Age != newAge)
-                    {
-                        current.IsAlive = newAlive;
-                        current.Age = newAge;
-
-                        // update visual for this cell only
-                        cellsVisuals[i, j].Fill = newAlive
-                                                  ? (newAge < 2 ? Brushes.White : Brushes.DarkGray)
-                                                  : Brushes.Gray;
-                    }
+                    cells[i, j].IsAlive = nextGenerationCells[i, j].IsAlive;
+                    cells[i, j].Age = nextGenerationCells[i, j].Age;
                 }
 
-            // No full redraw required
+            UpdateGraphics();
         }
         
 

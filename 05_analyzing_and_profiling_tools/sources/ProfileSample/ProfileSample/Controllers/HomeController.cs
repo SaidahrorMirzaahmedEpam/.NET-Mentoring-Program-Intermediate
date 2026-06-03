@@ -13,22 +13,26 @@ namespace ProfileSample.Controllers
     {
         public ActionResult Index()
         {
-            // Use a scoped context and a single query to fetch required fields
-            using (var context = new ProfileSampleEntities())
-            {
-                var model = context.ImgSources
-                    .AsNoTracking()
-                    .OrderBy(x => x.Id)
-                    .Take(20)
-                    .Select(x => new ImageModel
-                    {
-                        Name = x.Name,
-                        Data = x.Data
-                    })
-                    .ToList();
+            var context = new ProfileSampleEntities();
 
-                return View(model);
-            }
+            var sources = context.ImgSources.Take(20).Select(x => x.Id);
+            
+            var model = new List<ImageModel>();
+
+            foreach (var id in sources)
+            {
+                var item = context.ImgSources.Find(id);
+
+                var obj = new ImageModel()
+                {
+                    Name = item.Name,
+                    Data = item.Data
+                };
+
+                model.Add(obj);
+            } 
+
+            return View(model);
         }
 
         public ActionResult Convert()
@@ -39,20 +43,22 @@ namespace ProfileSample.Controllers
             {
                 foreach (var file in files)
                 {
-                    // Read the file into memory in a single call
-                    byte[] buff = System.IO.File.ReadAllBytes(file);
-
-                    var entity = new ImgSource()
+                    using (var stream = new FileStream(file, FileMode.Open))
                     {
-                        Name = Path.GetFileName(file),
-                        Data = buff,
-                    };
+                        byte[] buff = new byte[stream.Length];
 
-                    context.ImgSources.Add(entity);
-                }
+                        stream.Read(buff, 0, (int) stream.Length);
 
-                // Persist all added entities in a single SaveChanges call
-                context.SaveChanges();
+                        var entity = new ImgSource()
+                        {
+                            Name = Path.GetFileName(file),
+                            Data = buff,
+                        };
+
+                        context.ImgSources.Add(entity);
+                        context.SaveChanges();
+                    }
+                } 
             }
 
             return RedirectToAction("Index");

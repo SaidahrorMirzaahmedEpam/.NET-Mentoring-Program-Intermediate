@@ -9,7 +9,7 @@ namespace GameOfLife
 {
     class AdWindow : Window
     {
-        private DispatcherTimer adTimer;
+        private readonly DispatcherTimer adTimer;
         private int imgNmb;     // the number of the image currently shown
         private string link;    // the URL where the currently shown ad leads to
         
@@ -45,62 +45,45 @@ namespace GameOfLife
         
         protected override void OnClosed(EventArgs e)
         {
-            // Stop timer and unsubscribe to allow GC
-            if (adTimer != null)
-            {
-                adTimer.Stop();
-                adTimer.Tick -= ChangeAds;
-                adTimer = null;
-            }
-
-            // Remove background image reference so the BitmapImage can be collected
-            try
-            {
-                Background = null;
-            }
-            catch { }
-
+            //Unsubscribe();
             base.OnClosed(e);
         } 
 
         public void Unsubscribe()
         {
-            if (adTimer != null)
-            {
-                adTimer.Tick -= ChangeAds;
-                adTimer.Stop();
-            }
+            adTimer.Tick -= ChangeAds;
         }
 
         private void ChangeAds(object sender, EventArgs eventArgs)
         {
+            
             ImageBrush myBrush = new ImageBrush();
-
-            BitmapImage bmp = new BitmapImage();
-            bmp.BeginInit();
-            bmp.UriSource = new Uri($"ad{imgNmb}.jpg", UriKind.Relative);
-            bmp.CacheOption = BitmapCacheOption.OnLoad; // ensure file not locked
-            bmp.EndInit();
-            bmp.Freeze();
-
-            myBrush.ImageSource = bmp;
-            Background = myBrush;
-
+            
             switch (imgNmb)
             {
                 case 1:
+                    myBrush.ImageSource =
+                        new BitmapImage(new Uri("ad1.jpg", UriKind.Relative));
+                    Background = myBrush;
                     link = "http://example.com";
                     imgNmb++;
                     break;
                 case 2:
+                    myBrush.ImageSource =
+                        new BitmapImage(new Uri("ad2.jpg", UriKind.Relative));
+                    Background = myBrush;
                     link = "http://example.com";
                     imgNmb++;
                     break;
                 case 3:
+                    myBrush.ImageSource =
+                        new BitmapImage(new Uri("ad3.jpg", UriKind.Relative));
+                    Background = myBrush;
                     link = "http://example.com";
                     imgNmb = 1;
                     break;
             }
+            
         }
     }
 }
