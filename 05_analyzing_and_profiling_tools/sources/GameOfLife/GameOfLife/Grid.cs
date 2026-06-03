@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,26 +9,29 @@ namespace GameOfLife
 {
     class Grid
     {
-
         private int SizeX;
         private int SizeY;
         private Cell[,] cells;
         private Cell[,] nextGenerationCells;
-        private static Random rnd;
+
+        // FIX #6: Was static — overwritten by every new Grid instance and not thread-safe.
+        // Now a proper readonly instance field.
+        private readonly Random rnd;
+
         private Canvas drawCanvas;
         private Ellipse[,] cellsVisuals;
 
-        
+
         public Grid(Canvas c)
         {
             drawCanvas = c;
             rnd = new Random();
-            SizeX = (int) (c.Width / 5);
+            SizeX = (int)(c.Width / 5);
             SizeY = (int)(c.Height / 5);
             cells = new Cell[SizeX, SizeY];
             nextGenerationCells = new Cell[SizeX, SizeY];
             cellsVisuals = new Ellipse[SizeX, SizeY];
- 
+
             for (int i = 0; i < SizeX; i++)
                 for (int j = 0; j < SizeY; j++)
                 {
@@ -39,17 +42,20 @@ namespace GameOfLife
             SetRandomPattern();
             InitCellsVisuals();
             UpdateGraphics();
-            
         }
 
 
+        // FIX #5: Was allocating ~27,000 new Cell objects on every Clear press.
+        // Now resets existing objects' fields in-place — zero allocations.
         public void Clear()
         {
             for (int i = 0; i < SizeX; i++)
                 for (int j = 0; j < SizeY; j++)
                 {
-                    cells[i, j] = new Cell(i, j, 0, false);
-                    nextGenerationCells[i, j] = new Cell(i, j, 0, false);
+                    cells[i, j].IsAlive = false;
+                    cells[i, j].Age = 0;
+                    nextGenerationCells[i, j].IsAlive = false;
+                    nextGenerationCells[i, j].Age = 0;
                     cellsVisuals[i, j].Fill = Brushes.Gray;
                 }
         }
@@ -58,10 +64,9 @@ namespace GameOfLife
         void MouseMove(object sender, MouseEventArgs e)
         {
             var cellVisual = sender as Ellipse;
-            
-            int i = (int) cellVisual.Margin.Left / 5;
-            int j = (int) cellVisual.Margin.Top / 5;
-            
+
+            int i = (int)cellVisual.Margin.Left / 5;
+            int j = (int)cellVisual.Margin.Top / 5;
 
             if (e.LeftButton == MouseButtonState.Pressed)
             {
@@ -98,13 +103,13 @@ namespace GameOfLife
 
                     cellsVisuals[i, j].MouseMove += MouseMove;
                     cellsVisuals[i, j].MouseLeftButtonDown += MouseMove;
-                 }
+                }
             UpdateGraphics();
-                    
         }
-        
 
-        public static bool GetRandomBoolean()
+
+        // FIX #6: Was static — must be instance method now that rnd is an instance field.
+        public bool GetRandomBoolean()
         {
             return rnd.NextDouble() > 0.8;
         }
@@ -115,19 +120,19 @@ namespace GameOfLife
                 for (int j = 0; j < SizeY; j++)
                     cells[i, j].IsAlive = GetRandomBoolean();
         }
-        
+
+        // FIX #4: Was copying every field of every cell (~27,000 writes per generation).
+        // Now swaps the two array references in O(1) — zero field copies.
+        // nextGenerationCells is fully overwritten at the start of the next Update() anyway.
         public void UpdateToNextGeneration()
         {
-            for (int i = 0; i < SizeX; i++)
-                for (int j = 0; j < SizeY; j++)
-                {
-                    cells[i, j].IsAlive = nextGenerationCells[i, j].IsAlive;
-                    cells[i, j].Age = nextGenerationCells[i, j].Age;
-                }
+            var tmp = cells;
+            cells = nextGenerationCells;
+            nextGenerationCells = tmp;
 
             UpdateGraphics();
         }
-        
+
 
         public void Update()
         {
@@ -138,43 +143,19 @@ namespace GameOfLife
             {
                 for (int j = 0; j < SizeY; j++)
                 {
-//                    nextGenerationCells[i, j] = CalculateNextGeneration(i,j);          // UNOPTIMIZED
-                    CalculateNextGeneration(i, j, ref alive, ref age);   // OPTIMIZED
-                    nextGenerationCells[i, j].IsAlive = alive;  // OPTIMIZED
-                    nextGenerationCells[i, j].Age = age;  // OPTIMIZED
+                    CalculateNextGeneration(i, j, ref alive, ref age);
+                    nextGenerationCells[i, j].IsAlive = alive;
+                    nextGenerationCells[i, j].Age = age;
                 }
             }
             UpdateToNextGeneration();
         }
 
-        public Cell CalculateNextGeneration(int row, int column)    // UNOPTIMIZED
-        {
-            bool alive;
-            int count, age;
-
-            alive = cells[row, column].IsAlive;
-            age = cells[row, column].Age;
-            count = CountNeighbors(row, column);
-
-            if (alive && count < 2)
-                return new Cell(row, column, 0, false);
-            
-            if (alive && (count == 2 || count == 3))
-            {
-                cells[row, column].Age++;
-                return new Cell(row, column, cells[row, column].Age, true);
-            }
-
-            if (alive && count > 3)
-                return new Cell(row, column, 0, false);
-            
-            if (!alive && count == 3)
-                return new Cell(row, column, 0, true);
-            
-            return new Cell(row, column, 0, false);
-        }
-
-        public void CalculateNextGeneration(int row, int column, ref bool isAlive, ref int age)     // OPTIMIZED
+        // OPTIMIZED version — uses ref parameters so no Cell objects are allocated.
+        // FIX: Removed the side-effect bug where cells[row,column].Age++ mutated the
+        // current generation's data mid-loop. Age is now computed as Age+1 and written
+        // only into nextGenerationCells via the ref parameter, leaving cells[,] untouched.
+        public void CalculateNextGeneration(int row, int column, ref bool isAlive, ref int age)
         {
             isAlive = cells[row, column].IsAlive;
             age = cells[row, column].Age;
@@ -185,19 +166,21 @@ namespace GameOfLife
             {
                 isAlive = false;
                 age = 0;
+                return;
             }
 
             if (isAlive && (count == 2 || count == 3))
             {
-                cells[row, column].Age++;
                 isAlive = true;
-                age = cells[row, column].Age;
+                age = cells[row, column].Age + 1; // FIX: was cells[row,column].Age++ (mutated current gen)
+                return;
             }
 
             if (isAlive && count > 3)
             {
                 isAlive = false;
                 age = 0;
+                return;
             }
 
             if (!isAlive && count == 3)
