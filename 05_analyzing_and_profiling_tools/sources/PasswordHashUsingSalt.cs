@@ -2,22 +2,26 @@ public class PasswordHashUsingSalt
 {
     public string GeneratePasswordHashUsingSalt(string passwordText, byte[] salt)
     {
+        const int iterate = 600_000;
+        const int derivedBytesLength = 32;
 
-        var iterate = 10000;
+        using var pbkdf2 = new Rfc2898DeriveBytes(
+            passwordText, salt, iterate, HashAlgorithmName.SHA256);
 
-        var pbkdf2 = new Rfc2898DeriveBytes(passwordText, salt, iterate);
+        byte[] hash = pbkdf2.GetBytes(derivedBytesLength);
+        byte[] hashBytes = new byte[salt.Length + hash.Length];
 
-        byte[] hash = pbkdf2.GetBytes(20);
+        Buffer.BlockCopy(salt, 0, hashBytes, 0, salt.Length);
+        Buffer.BlockCopy(hash, 0, hashBytes, salt.Length, hash.Length);
 
-        byte[] hashBytes = new byte[36];
-
-        Array.Copy(salt, 0, hashBytes, 0, 16);
-
-        Array.Copy(hash, 0, hashBytes, 16, 20);
-
-        var passwordHash = Convert.ToBase64String(hashBytes);
-
-        return passwordHash;
-
+        try
+        {
+            return Convert.ToBase64String(hashBytes);
+        }
+        finally
+        {
+            Array.Clear(hash, 0, hash.Length);
+            Array.Clear(hashBytes, 0, hashBytes.Length);
+        }
     }
 }
