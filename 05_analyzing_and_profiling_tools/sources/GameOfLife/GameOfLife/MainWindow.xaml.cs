@@ -44,15 +44,20 @@ namespace GameOfLife
             }
         }
 
+        // FIX #2: Was iterating ALL windows and nulling every slot, even windows that
+        // had not closed. Now only the specific window that raised the event is cleaned up.
         private void AdWindowOnClosed(object sender, EventArgs eventArgs)
         {
-            for (int i = 0; i < 2; i++)
+            var closed = (AdWindow)sender;
+            for (int i = 0; i < adWindow.Length; i++)
             {
-                adWindow[i].Closed -= AdWindowOnClosed;
-                adWindow[i] = null;
+                if (adWindow[i] == closed)
+                {
+                    adWindow[i].Closed -= AdWindowOnClosed;
+                    adWindow[i] = null;
+                    break;
+                }
             }
-            
-            
         }
 
 

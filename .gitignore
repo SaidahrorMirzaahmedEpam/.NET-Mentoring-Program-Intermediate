@@ -107,3 +107,9 @@ coverage/
 
 # Large dump files
 *.dmp
+
+*.pubxml
+
+09_hosting_and_deployment/SampleWebApp/Properties/serviceDependencies.contoso-demo-app-sayid - Web Deploy.json
+
+09_hosting_and_deployment/SampleWebApp/Properties/serviceDependencies.contoso-demo-app-sayid - Web Deploy1.json
